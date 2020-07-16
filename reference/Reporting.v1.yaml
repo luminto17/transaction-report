@@ -1,0 +1,221 @@
+openapi: 3.0.0
+info:
+  title: Reporting
+  version: '1.0'
+  description: |
+    Background
+    - Customers want to automate their internal reconciliation process
+    - Customers depend on the CSV report that they need to manually trigger from Dashboard and sent to email
+    - Customers cannot automate their reconciliation process with the current flow we have
+
+    Goals
+    Provide more customizable report to help reconciliation process for customers by giving more option to:
+    - Get more data/information
+    - Pick more method to receive reports
+    - Generate automated report
+servers:
+  - url: 'https://api.xendit.co'
+paths:
+  /reports:
+    post:
+      summary: Generate Report
+      tags:
+        - report
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+              examples:
+                Request Accepted:
+                  value:
+                    id: 5f0be0dfd2c1527ffd79c618
+                    created: '2020-07-01T16:21:24Z'
+                    type: CASH
+                    filter:
+                      from: '2020-05-01'
+                      to: '2020-05-31'
+                      timezone: Asia/Jakarta
+                    status: PENDING
+                    url: null
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code:
+                    type: string
+                  message:
+                    type: string
+                  errors:
+                    type: string
+              examples:
+                API Validation Error:
+                  value:
+                    error_code: API_VALIDATION_ERROR
+                    message: There was an error with the format submitted to the server.
+                    errors:
+                      - field:
+                          - type
+                        location: body
+                        messages:
+                          - '"type" is required'
+                        types:
+                          - any.required
+                Invalid Report Type:
+                  value:
+                    error_code: INVALID_REPORT_TYPE
+                    message: The requested report type is invalid or not supported yet. Request with valid report type or reach us to support@xendit.co to request feature
+      operationId: post-reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type:
+                  type: string
+                  enum:
+                    - CASH
+                    - PENDING
+                filter:
+                  type: object
+                  properties:
+                    from:
+                      type: string
+                      format: date
+                    to:
+                      type: string
+                      format: date
+                    timezone:
+                      type: string
+                      description: 'IANA global timezone format http://www.iana.org/time-zones'
+                    transaction_types:
+                      type: string
+                    transaction_status:
+                      type: string
+                    date_paid:
+                      type: string
+                    expiry_date:
+                      type: string
+                    created_from:
+                      type: string
+        description: ''
+  '/reports/{id}':
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
+        description: Report ID from Generate Report ID API
+    get:
+      summary: Get Report by ID
+      tags:
+        - report
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+              examples:
+                Report Found:
+                  value:
+                    id: 5f0be0dfd2c1527ffd79c618
+                    created: '2020-07-01T16:21:24Z'
+                    type: CASH
+                    filter:
+                      from: '2020-05-01'
+                      to: '2020-05-31'
+                      timezone: Asia/Jakarta
+                    status: COMPLETED
+                    url: 'https://files.xendit.co/reports/5f0be0dfd2c1527ffd79c618'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error_code:
+                    type: string
+                  message:
+                    type: string
+              examples:
+                Report ID Not Found:
+                  value:
+                    error_code: DATA_NOT_FOUND
+                    message: We cannot find the data you request. Try using a valid ID
+      operationId: get-reports-id
+components:
+  schemas:
+    Report:
+      title: Report
+      type: object
+      x-tags:
+        - report
+      description: ''
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          description: ''
+        filter:
+          type: object
+          properties:
+            from:
+              type: string
+            to:
+              type: string
+            transaction_types:
+              type: array
+              items: {}
+            transaction_status:
+              type: string
+            timezone:
+              type: string
+              description: 'Default: UTC+0'
+            date_paid:
+              type: string
+              description: |-
+                {date_start,date_end}
+                Only for Invoice
+            expiry_date:
+              type: string
+              description: |-
+                {date_start,date_end}
+                Only for Invoice
+            created_from:
+              type: string
+              description: |-
+                Only for Invoice
+                Example: dashboard, api_gateway, integration, on_demand, recurring
+        created:
+          type: string
+        status:
+          type: string
+        url:
+          type: string
+      x-examples:
+        Example:
+          id: 5f0be0dfd2c1527ffd79c618
+          created: '2020-07-01T16:21:24Z'
+          type: CASH
+          filter:
+            from: '2020-05-01'
+            to: '2020-05-31'
+            timezone: Asia/Jakarta
+          status: COMPLETED
+          url: 'https://files.xendit.co/reports/5f0be0dfd2c1527ffd79c618'
+  securitySchemes:
+    API Key:
+      name: API Key
+      type: apiKey
+      in: header
